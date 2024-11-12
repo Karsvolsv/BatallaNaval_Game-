@@ -1,12 +1,15 @@
 package ethan.batallanaval.Controller;
 
-import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.scene.control.Button;
-import javafx.scene.control.Label;
+import javafx.fxml.FXML;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.stage.Stage;
+import javafx.scene.Node;
+import javafx.event.ActionEvent;
 
 public class MainMenuController {
-
 
     @FXML
     private Button jugarButton;
@@ -15,7 +18,24 @@ public class MainMenuController {
     private Button salirButton;
 
     @FXML
-    private void onJugarButtonClick() {
+    private void onJugarButtonClick(ActionEvent event) {
+        try {
+            // Cargar la vista del tablero
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/ViewBattleship.fxml"));
+            Parent root = loader.load();
+
+            // Configurar el controlador del tablero
+            ControllerBattleship controller = loader.getController();
+            controller.initialize();
+
+            // Configurar la escena y el stage
+            Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+            Scene scene = new Scene(root, 750, 820);
+            stage.setScene(scene);
+            stage.show();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @FXML
@@ -24,5 +44,7 @@ public class MainMenuController {
         stage.close();
     }
 }
+
+
 
 
