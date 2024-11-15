@@ -2,33 +2,39 @@ package ethan.batallanaval.Controller;
 
 import ethan.batallanaval.Model.ModelBattleship;
 import javafx.fxml.FXML;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.Pane;
-import javafx.scene.shape.Rectangle;
-import javafx.scene.paint.Color;
-import javafx.scene.input.MouseEvent;
+import javafx.scene.control.Button;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.Node;
+import javafx.scene.input.TransferMode;
+import javafx.scene.input.Dragboard;
+import javafx.scene.input.ClipboardContent;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
-
-import java.io.InputStream;
-import java.util.Map;
-import java.util.HashMap;
 
 public class ControllerBattleship {
     private ModelBattleship model;
 
-    @FXML private GridPane boardGrid;  // Cambiado a GridPane según el FXML
-    @FXML private Pane shipsContainer;  // Panel de contenedor de barcos
+    @FXML
+    private GridPane boardGrid;
+
+    @FXML
+    private HBox shipsContainer;
+
+    @FXML
+    private Button showInstructions;
+
+    @FXML
+    private Button resetButton;
 
     private static final int BOARD_SIZE = 10;
     private static final int CELL_SIZE = 60;
 
-    private Map<String, Ship> shipMap = new HashMap<>();
-    private Ship selectedShip = null;  // Para el barco que el usuario selecciona
-
-    private Cell[][] board = new Cell[BOARD_SIZE][BOARD_SIZE];
+    // Imágenes para los diferentes estados y tipos de barcos
+    private Image waterImage, hitImage, sunkImage;
+    private Image portaavionesImage, submarinoImage, destructorImage, fragataImage;
 
     public void initialize() {
         model = new ModelBattleship();
@@ -37,184 +43,154 @@ public class ControllerBattleship {
         initializeShips();
     }
 
-    // Cargar las imágenes de los barcos
     private void loadImages() {
-        shipMap.put("portaaviones", createShip("/Imagenes/portaaviones.png", 4, ModelBattleship.MAX_PORTAAVIONES));
-        shipMap.put("submarino", createShip("/Imagenes/submarinos.png", 3, ModelBattleship.MAX_SUBMARINOS));
-        shipMap.put("destructor", createShip("/Imagenes/destructores.png", 2, ModelBattleship.MAX_DESTRUCTORES));
-        shipMap.put("fragata", createShip("/Imagenes/fragatas.png", 1, ModelBattleship.MAX_FRAGATAS));
+        String basePath = getClass().getResource("/Imagenes/").toExternalForm();
+        waterImage = new Image(basePath + "agua.png");
+        hitImage = new Image(basePath + "tocado.png");
+        sunkImage = new Image(basePath + "hundido.png");
+        portaavionesImage = new Image(basePath + "portaaviones.png", CELL_SIZE * 4, CELL_SIZE, true, true);
+        submarinoImage = new Image(basePath + "submarinos.png", CELL_SIZE * 3, CELL_SIZE, true, true);
+        destructorImage = new Image(basePath + "destructores.png", CELL_SIZE * 2, CELL_SIZE, true, true);
+        fragataImage = new Image(basePath + "fragatas.png", CELL_SIZE, CELL_SIZE, true, true);
     }
 
-    // Crear un objeto Ship con una imagen, tamaño y cantidad
-    private Ship createShip(String imagePath, int size, int count) {
-        InputStream stream = getClass().getResourceAsStream(imagePath);
-        if (stream == null) {
-            throw new IllegalArgumentException("Error: No se pudo cargar la imagen " + imagePath);
-        }
-        return new Ship(stream, size, count);
-    }
-
-    // Crear el tablero con Rectángulos en lugar de botones
     private void createBoard() {
         for (int i = 0; i < BOARD_SIZE; i++) {
             for (int j = 0; j < BOARD_SIZE; j++) {
-                // Inicializamos las celdas en la matriz
-                board[i][j] = new Cell();
-
-                Rectangle cellRectangle = createCell(i, j);
-                boardGrid.add(cellRectangle, j, i);  // Añadimos el rectángulo al GridPane (boardGrid)
+                Button cell = createCell(i, j);
+                boardGrid.add(cell, j, i);
             }
         }
     }
 
-    // Crear una celda en el tablero
-    private Rectangle createCell(int x, int y) {
-        Rectangle rect = new Rectangle(CELL_SIZE, CELL_SIZE);
-        rect.setFill(Color.BLUE);  // Celda vacía, por defecto
-
-        // Añadir evento de clic para colocar barcos
-        rect.setOnMouseClicked(event -> onCellClick(event, x, y));
-
-        return rect;
-    }
-
-    private void onCellClick(MouseEvent event, int x, int y) {
-        // Verificamos si hay un barco seleccionado y si está disponible
-        if (selectedShip == null) {
-            showError("No hay barcos disponibles para colocar.");
-            return;
-        }
-
-        // Intentamos colocar el barco en la celda seleccionada
-        if (model.placeShip(x, y, selectedShip.getSize(), true)) {  // Por defecto, horizontal
-            updateBoard();  // Actualiza el tablero para reflejar los cambios
-        } else {
-            showError("No se pudo colocar el barco en esta posición.");
-        }
-    }
-
-    // Inicializar los barcos en la interfaz
     private void initializeShips() {
+        // Limpiar cualquier barco previamente colocado
         shipsContainer.getChildren().clear();
-        shipMap.forEach((name, ship) -> {
-            for (int i = 0; i < ship.getCount(); i++) {
-                createDraggableShip(ship);
-            }
-        });
-    }
 
-    // Crear un barco arrastrable en la interfaz
-    private void createDraggableShip(Ship ship) {
-        // Esto se hace de forma similar a antes, usando imágenes
-        ImageView shipImageView = new ImageView(ship.getImageView().getImage());
-        shipImageView.setFitWidth(ship.getSize() * CELL_SIZE);
-        shipImageView.setFitHeight(CELL_SIZE);
+        // Asegurarse de que las filas (HBox) estén presentes antes de agregar los barcos
+        if (shipsContainer.getChildren().isEmpty()) {
+            shipsContainer.getChildren().add(new HBox(10));  // Primera fila (HBox)
+            shipsContainer.getChildren().add(new HBox(10));  // Segunda fila (HBox)
+        }
 
-        // Lógica de drag-and-drop para los barcos
-        shipImageView.setOnMouseClicked(event -> {
-            selectedShip = ship;  // Selecciona el barco
-            showMessage("Barco seleccionado: " + ship.getSize() + " casillas.");
-        });
+        // Crear los barcos en el orden correcto (de mayor a menor tamaño)
 
-        shipImageView.setOnMouseDragged(event -> {
-            shipImageView.setX(event.getSceneX() - shipImageView.getFitWidth() / 2);
-            shipImageView.setY(event.getSceneY() - shipImageView.getFitHeight() / 2);
-        });
+        // 1. Portaaviones (4 casillas) - Cantidad: 1
+        if (model.getPortaavionesCount() < ModelBattleship.MAX_PORTAAVIONES) {
+            createDraggableShip(portaavionesImage, 4);  // 1 Portaaviones
+        }
 
-        shipImageView.setOnMouseReleased(event -> {
-            int x = (int) (event.getSceneY() / CELL_SIZE);
-            int y = (int) (event.getSceneX() / CELL_SIZE);
-            placeShip(x, y, ship.getSize(), true);
-        });
-
-        shipsContainer.getChildren().add(shipImageView);
-    }
-
-    // Colocar un barco en el tablero
-    private void placeShip(int x, int y, int shipSize, boolean isHorizontal) {
-        if (isHorizontal) {
-            if (y + shipSize > BOARD_SIZE) {
-                showError("El barco no cabe en esa posición horizontal.");
-                return;
-            }
-
-            for (int i = 0; i < shipSize; i++) {
-                if (board[x][y + i].getStatus() != ModelBattleship.CellStatus.EMPTY) {
-                    showError("La posición ya está ocupada.");
-                    return;
-                }
-            }
-
-            // Colocar el barco
-            for (int i = 0; i < shipSize; i++) {
-                board[x][y + i].setShip(selectedShip);
-                board[x][y + i].setStatus(ModelBattleship.CellStatus.SHIP);
-            }
-        } else {
-            if (x + shipSize > BOARD_SIZE) {
-                showError("El barco no cabe en esa posición vertical.");
-                return;
-            }
-
-            for (int i = 0; i < shipSize; i++) {
-                if (board[x + i][y].getStatus() != ModelBattleship.CellStatus.EMPTY) {
-                    showError("La posición ya está ocupada.");
-                    return;
-                }
-            }
-
-            // Colocar el barco
-            for (int i = 0; i < shipSize; i++) {
-                board[x + i][y].setShip(selectedShip);
-                board[x + i][y].setStatus(ModelBattleship.CellStatus.SHIP);
+        // 2. Submarinos (3 casillas cada uno) - Cantidad: 2
+        for (int i = 0; i < ModelBattleship.MAX_SUBMARINOS; i++) {
+            if (model.getSubmarinosCount() < ModelBattleship.MAX_SUBMARINOS) {
+                createDraggableShip(submarinoImage, 3);    // 2 Submarinos
             }
         }
 
-        updateBoard();  // Actualiza el tablero visualmente
+        // 3. Destructores (2 casillas cada uno) - Cantidad: 3
+        for (int i = 0; i < ModelBattleship.MAX_DESTRUCTORES; i++) {
+            if (model.getDestructoresCount() < ModelBattleship.MAX_DESTRUCTORES) {
+                createDraggableShip(destructorImage, 2);   // 3 Destructores
+            }
+        }
+
+        // 4. Fragatas (1 casilla cada una) - Cantidad: 4
+        for (int i = 0; i < ModelBattleship.MAX_FRAGATAS; i++) {
+            if (model.getFragatasCount() < ModelBattleship.MAX_FRAGATAS) {
+                createDraggableShip(fragataImage, 1);      // 4 Fragatas
+            }
+        }
     }
 
-    // Actualizar el tablero visualmente
+    private void createDraggableShip(Image shipImage, int size) {
+        Button shipButton = new Button();
+        shipButton.setGraphic(new ImageView(shipImage));
+        shipButton.setPrefSize(CELL_SIZE * size, CELL_SIZE);
+
+        // Dragging logic
+        shipButton.setOnDragDetected(event -> {
+            Dragboard db = shipButton.startDragAndDrop(TransferMode.MOVE);
+            ClipboardContent content = new ClipboardContent();
+            content.putString(String.valueOf(size)); // Enviar el tamaño del barco
+            db.setContent(content);
+            event.consume();
+        });
+
+        // Se agregan los barcos a las filas
+        HBox targetHBox = (HBox) shipsContainer.getChildren().get(
+                ((HBox) shipsContainer.getChildren().get(0)).getChildren().size() < 2 ? 0 : 1
+        );
+        targetHBox.getChildren().add(shipButton);
+    }
+
+    private Button createCell(int x, int y) {
+        Button cell = new Button();
+        cell.setPrefSize(CELL_SIZE, CELL_SIZE);
+        cell.setMaxSize(CELL_SIZE, CELL_SIZE);
+
+        // Permitir el arrastre sobre la celda
+        cell.setOnDragOver(event -> {
+            if (event.getGestureSource() != cell && event.getDragboard().hasString()) {
+                event.acceptTransferModes(TransferMode.MOVE);
+            }
+            event.consume();
+        });
+
+        // Colocar un barco en la celda
+        cell.setOnDragDropped(event -> {
+            Dragboard db = event.getDragboard();
+            boolean success = false;
+            if (db.hasString()) {
+                int shipSize = Integer.parseInt(db.getString());
+                boolean placed = model.placeShip(x, y, shipSize, true); // Colocación horizontal por defecto
+                if (placed) {
+                    updateBoard();
+                    success = true;
+                } else {
+                    showError("No se puede colocar el barco aquí.");
+                }
+            }
+            event.setDropCompleted(success);
+            event.consume();
+        });
+
+        return cell;
+    }
+
     private void updateBoard() {
         for (int i = 0; i < BOARD_SIZE; i++) {
             for (int j = 0; j < BOARD_SIZE; j++) {
-                Rectangle cell = (Rectangle) getCellFromGridPane(i, j);
-                ModelBattleship.CellStatus status = board[i][j].getStatus();
+                Button cell = (Button) getCellAt(i, j);
+                ModelBattleship.CellStatus status = model.getCellStatus(i, j);
                 updateCellStyle(cell, status);
             }
         }
     }
 
-    private void updateCellStyle(Rectangle rect, ModelBattleship.CellStatus status) {
-        switch (status) {
-            case EMPTY:
-                rect.setFill(Color.BLUE);  // Agua
-                break;
-            case SHIP:
-                rect.setFill(Color.GRAY);  // Barco
-                break;
-            case HIT:
-                rect.setFill(Color.RED);   // Tocado
-                break;
-            case MISS:
-                rect.setFill(Color.WHITE); // Agua
-                break;
-            case SUNK:
-                rect.setFill(Color.BLACK); // Hundido
-                break;
-        }
+    private Node getCellAt(int x, int y) {
+        return boardGrid.getChildren().stream()
+                .filter(node -> GridPane.getColumnIndex(node) == (y) && GridPane.getRowIndex(node) == (x))
+                .findFirst().orElse(null);
     }
 
-    // Método para obtener la celda desde el GridPane (adaptado)
-    private Rectangle getCellFromGridPane(int x, int y) {
-        for (var node : boardGrid.getChildren()) {
-            if (node instanceof Rectangle) {
-                Rectangle rect = (Rectangle) node;
-                if (rect.getX() == y * CELL_SIZE && rect.getY() == x * CELL_SIZE) {
-                    return rect;
-                }
-            }
+    private void updateCellStyle(Button cell, ModelBattleship.CellStatus status) {
+        switch (status) {
+            case EMPTY:
+                cell.setGraphic(new ImageView(waterImage));
+                break;
+            case SHIP:
+                cell.setStyle("-fx-background-color: gray;");
+                break;
+            case HIT:
+                cell.setGraphic(new ImageView(hitImage));
+                break;
+            case MISS:
+                cell.setGraphic(new ImageView(waterImage));
+                break;
+            case SUNK:
+                cell.setGraphic(new ImageView(sunkImage));
+                break;
         }
-        return null;
     }
 
     @FXML
@@ -225,15 +201,19 @@ public class ControllerBattleship {
 
     @FXML
     private void resetGame() {
-        model = new ModelBattleship();
-        clearBoard();
-        initializeShips();
+        model = new ModelBattleship(); // Reinicia el modelo
+        clearBoard(); // Limpia el tablero visualmente
+        shipsContainer.getChildren().clear(); // Elimina los barcos colocados en la interfaz
+        initializeShips(); // Vuelve a agregar los barcos al contenedor para ser colocados nuevamente
         System.out.println("Juego reiniciado");
     }
 
     private void clearBoard() {
-        boardGrid.getChildren().clear();
-        createBoard();
+        for (Node node : boardGrid.getChildren()) {
+            Button cell = (Button) node;
+            cell.setGraphic(null); // Elimina cualquier imagen del botón
+            cell.setStyle(""); // Elimina cualquier estilo de fondo aplicado
+        }
     }
 
     @FXML
@@ -241,7 +221,8 @@ public class ControllerBattleship {
         Alert alert = new Alert(AlertType.INFORMATION);
         alert.setTitle("Instrucciones del Juego");
         alert.setHeaderText("Reglas y cantidad de barcos:");
-        alert.setContentText(
+
+        String instructions =
                 "Reglas del Juego:\n" +
                         "- Coloca los barcos en el tablero antes de iniciar.\n" +
                         "- Los barcos pueden colocarse horizontalmente por defecto.\n" +
@@ -251,8 +232,9 @@ public class ControllerBattleship {
                         "1. Portaaviones (4 casillas) - Cantidad: 1\n" +
                         "2. Submarinos (3 casillas cada uno) - Cantidad: 2\n" +
                         "3. Destructores (2 casillas cada uno) - Cantidad: 3\n" +
-                        "4. Fragatas (1 casilla cada una) - Cantidad: 4\n"
-        );
+                        "4. Fragatas (1 casilla cada una) - Cantidad: 4\n";
+
+        alert.setContentText(instructions);
         alert.showAndWait();
     }
 
@@ -262,74 +244,5 @@ public class ControllerBattleship {
         alert.setHeaderText("Colocación no válida");
         alert.setContentText(message);
         alert.showAndWait();
-    }
-
-    private void showMessage(String message) {
-        Alert alert = new Alert(AlertType.INFORMATION);
-        alert.setTitle("Mensaje");
-        alert.setContentText(message);
-        alert.showAndWait();
-    }
-
-    // Clase para representar las celdas del tablero
-    private static class Cell {
-        private ModelBattleship.CellStatus status;
-        private Ship ship;
-
-        public Cell() {
-            this.status = ModelBattleship.CellStatus.EMPTY;
-            this.ship = null;
-        }
-
-        public ModelBattleship.CellStatus getStatus() {
-            return status;
-        }
-
-        public void setStatus(ModelBattleship.CellStatus status) {
-            this.status = status;
-        }
-
-        public Ship getShip() {
-            return ship;
-        }
-
-        public void setShip(Ship ship) {
-            this.ship = ship;
-        }
-    }
-
-    // Clase Ship (simplificada y corregida)
-    private static class Ship {
-        private final ImageView imageView;
-        private final int size;
-        private final int count;
-        private boolean isHorizontal;
-
-        public Ship(InputStream imagePath, int size, int count) {
-            this.imageView = new ImageView(new Image(imagePath, size * CELL_SIZE, CELL_SIZE, true, true));
-            this.size = size;
-            this.count = count;
-            this.isHorizontal = true;
-        }
-
-        public ImageView getImageView() {
-            return imageView;
-        }
-
-        public int getSize() {
-            return size;
-        }
-
-        public int getCount() {
-            return count;
-        }
-
-        public boolean isHorizontal() {
-            return isHorizontal;
-        }
-
-        public void setHorizontal(boolean isHorizontal) {
-            this.isHorizontal = isHorizontal;
-        }
     }
 }
