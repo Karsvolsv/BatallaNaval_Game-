@@ -2,155 +2,123 @@ package ethan.batallanaval.Model;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
 
 public class ModelBattleship {
-    private final int BOARD_SIZE = 10;
-    private CellStatus[][] board;
+    private static final int BOARD_SIZE = 10;
+    private Cell[][] board;
     private List<Ship> ships;
 
-    // Mapa para manejar la cantidad de barcos de cada tipo
-    private Map<Integer, Integer> shipCountMap;
-
-    // Cantidades máximas de barcos según las reglas
+    // Cantidades máximas de cada tipo de barco
     public static final int MAX_PORTAAVIONES = 1;
     public static final int MAX_SUBMARINOS = 2;
     public static final int MAX_DESTRUCTORES = 3;
     public static final int MAX_FRAGATAS = 4;
 
+    // Listas para almacenar los barcos por tipo
+    private List<Ship> portaaviones = new ArrayList<>();
+    private List<Ship> submarinos = new ArrayList<>();
+    private List<Ship> destructores = new ArrayList<>();
+    private List<Ship> fragatas = new ArrayList<>();
+
     public ModelBattleship() {
-        board = new CellStatus[BOARD_SIZE][BOARD_SIZE];
+        board = new Cell[BOARD_SIZE][BOARD_SIZE];
         ships = new ArrayList<>();
-        shipCountMap = new HashMap<>();
         initializeBoard();
-        initializeShipCounts();
     }
 
+    // Inicializa el tablero con celdas vacías
     private void initializeBoard() {
         for (int i = 0; i < BOARD_SIZE; i++) {
             for (int j = 0; j < BOARD_SIZE; j++) {
-                board[i][j] = CellStatus.EMPTY;
+                board[i][j] = new Cell(CellStatus.EMPTY); // Cada celda comienza vacía
             }
         }
-    }
-
-    // Inicializa los contadores de barcos en el mapa
-    private void initializeShipCounts() {
-        shipCountMap.put(4, 0);  // Portaaviones
-        shipCountMap.put(3, 0);  // Submarinos
-        shipCountMap.put(2, 0);  // Destructores
-        shipCountMap.put(1, 0);  // Fragatas
     }
 
     // Método para colocar un barco en el tablero
     public boolean placeShip(int startX, int startY, int length, boolean horizontal) {
         if (!isValidPlacement(startX, startY, length, horizontal)) {
-            return false;
+            return false; // Si no es válido, no se coloca el barco
         }
 
-        // Verificar que no excedamos la cantidad máxima de barcos
-        if (!canPlaceShip(length)) {
-            return false;
-        }
-
-        // Colocar el barco
+        // Crear el barco
         Ship ship = new Ship(startX, startY, length, horizontal);
         ships.add(ship);
 
-        for (int i = 0; i < length; i++) {
-            if (horizontal) {
-                board[startX][startY + i] = CellStatus.SHIP;
-            } else {
-                board[startX + i][startY] = CellStatus.SHIP;
-            }
-        }
-
-        // Actualizar el contador de barcos
-        updateShipCount(length);
-
-        return true;
-    }
-
-    // Verificar si se puede colocar el barco dependiendo de su tamaño
-    private boolean canPlaceShip(int length) {
-        if (length == 4 && shipCountMap.get(4) < MAX_PORTAAVIONES) {
-            return true;  // Puede colocar un portaaviones
-        } else if (length == 3 && shipCountMap.get(3) < MAX_SUBMARINOS) {
-            return true;  // Puede colocar un submarino
-        } else if (length == 2 && shipCountMap.get(2) < MAX_DESTRUCTORES) {
-            return true;  // Puede colocar un destructor
-        } else if (length == 1 && shipCountMap.get(1) < MAX_FRAGATAS) {
-            return true;  // Puede colocar una fragata
-        }
-        return false;  // No se puede colocar más barcos de este tamaño
-    }
-
-    // Actualizar el contador de barcos según su tamaño
-    private void updateShipCount(int length) {
-        shipCountMap.put(length, shipCountMap.get(length) + 1);
-    }
-
-    // Verificar si la colocación es válida
-    private boolean isValidPlacement(int startX, int startY, int length, boolean horizontal) {
-        if (horizontal && (startY + length > BOARD_SIZE)) return false;
-        if (!horizontal && (startX + length > BOARD_SIZE)) return false;
-
+        // Colocar el barco en el tablero
         for (int i = 0; i < length; i++) {
             int x = horizontal ? startX : startX + i;
             int y = horizontal ? startY + i : startY;
-            if (board[x][y] != CellStatus.EMPTY) {
-                return false;
+            board[x][y].setStatus(CellStatus.SHIP);  // Marca la celda como ocupada por un barco
+            ship.addCell(x, y);
+        }
+
+        // Añadir el barco a la lista correspondiente
+        addShipToList(ship);
+
+        return true;
+    }
+
+    // Añade el barco a la lista correspondiente según su tamaño
+    private void addShipToList(Ship ship) {
+        int length = ship.getLength();
+        if (length == 4) {
+            if (portaaviones.size() < MAX_PORTAAVIONES) portaaviones.add(ship);
+        } else if (length == 3) {
+            if (submarinos.size() < MAX_SUBMARINOS) submarinos.add(ship);
+        } else if (length == 2) {
+            if (destructores.size() < MAX_DESTRUCTORES) destructores.add(ship);
+        } else if (length == 1) {
+            if (fragatas.size() < MAX_FRAGATAS) fragatas.add(ship);
+        }
+    }
+
+    // Verifica si la colocación de un barco es válida en el tablero
+    private boolean isValidPlacement(int startX, int startY, int length, boolean horizontal) {
+        // Verificar si el barco se sale del tablero
+        if (horizontal && startY + length > BOARD_SIZE) return false;
+        if (!horizontal && startX + length > BOARD_SIZE) return false;
+
+        // Verificar que no haya otro barco en las celdas donde queremos colocar el barco
+        for (int i = 0; i < length; i++) {
+            int x = horizontal ? startX : startX + i;
+            int y = horizontal ? startY + i : startY;
+            if (board[x][y].getStatus() != CellStatus.EMPTY) {
+                return false;  // Si alguna celda ya está ocupada, no es válido
             }
         }
         return true;
     }
 
-    // Obtener el estado de una celda específica
+    // Obtiene el estado de una celda específica en el tablero
     public CellStatus getCellStatus(int x, int y) {
-        return board[x][y];
+        return board[x][y].getStatus();
     }
 
-    // Devuelve la lista de barcos colocados
+    // Verifica si se ha alcanzado el número máximo de barcos
+    public boolean isMaxShipsPlaced() {
+        return portaaviones.size() == MAX_PORTAAVIONES &&
+                submarinos.size() == MAX_SUBMARINOS &&
+                destructores.size() == MAX_DESTRUCTORES &&
+                fragatas.size() == MAX_FRAGATAS;
+    }
+
+    // Obtiene la lista de barcos
     public List<Ship> getShips() {
         return ships;
     }
 
-    // Método que devuelve si se ha colocado el número máximo de barcos
-    public boolean isMaxShipsPlaced() {
-        return shipCountMap.get(4) >= MAX_PORTAAVIONES &&
-                shipCountMap.get(3) >= MAX_SUBMARINOS &&
-                shipCountMap.get(2) >= MAX_DESTRUCTORES &&
-                shipCountMap.get(1) >= MAX_FRAGATAS;
-    }
-
-    // Métodos para obtener el número de barcos de cada tipo
-    public int getPortaavionesCount() {
-        return shipCountMap.get(4);
-    }
-
-    public int getSubmarinosCount() {
-        return shipCountMap.get(3);
-    }
-
-    public int getDestructoresCount() {
-        return shipCountMap.get(2);
-    }
-
-    public int getFragatasCount() {
-        return shipCountMap.get(1);
-    }
-
-    // Definir los estados posibles de las celdas en el tablero
+    // Enum para representar el estado de cada celda en el tablero
     public enum CellStatus {
         EMPTY, SHIP, HIT, MISS, SUNK
     }
 
-    // Clase interna Ship para almacenar la información de cada barco
+    // Clase interna para representar un barco en el juego
     public static class Ship {
         private int startX, startY, length;
         private boolean horizontal;
         private int hits;
+        private List<int[]> cells;
 
         public Ship(int startX, int startY, int length, boolean horizontal) {
             this.startX = startX;
@@ -158,18 +126,69 @@ public class ModelBattleship {
             this.length = length;
             this.horizontal = horizontal;
             this.hits = 0;
+            this.cells = new ArrayList<>();
         }
 
-        public boolean isSunk() {
-            return hits >= length;
-        }
-
+        // Incrementa el conteo de impactos en el barco
         public void hit() {
             hits++;
         }
 
-        public int getLength() {
-            return length;
+        // Verifica si el barco ha sido hundido
+        public boolean isSunk() {
+            return hits >= length;
+        }
+
+        // Verifica si el barco ha sido tocado en una posición dada
+        public boolean isHitAt(int x, int y) {
+            if (horizontal) {
+                return y >= startY && y < startY + length && x == startX;
+            } else {
+                return x >= startX && x < startX + length && y == startY;
+            }
+        }
+
+        // Añade una celda a la lista de celdas ocupadas por el barco
+        public void addCell(int x, int y) {
+            cells.add(new int[]{x, y});
+        }
+
+        // Devuelve las celdas ocupadas por el barco
+        public List<int[]> getCells() {
+            return cells;
+        }
+
+        // Métodos de acceso para las propiedades del barco
+        public int getStartX() { return startX; }
+        public int getStartY() { return startY; }
+        public int getLength() { return length; }
+        public boolean isHorizontal() { return horizontal; }
+    }
+
+    // Clase para representar una celda en el tablero
+    public static class Cell {
+        private CellStatus status;
+        private Ship ship;
+
+        public Cell(CellStatus status) {
+            this.status = status;
+            this.ship = null;
+        }
+
+        public CellStatus getStatus() {
+            return status;
+        }
+
+        public void setStatus(CellStatus status) {
+            this.status = status;
+        }
+
+        public Ship getShip() {
+            return ship;
+        }
+
+        public void setShip(Ship ship) {
+            this.ship = ship;
         }
     }
 }

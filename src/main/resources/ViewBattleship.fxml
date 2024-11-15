@@ -1,37 +1,47 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
-<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.control.Label?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
 
-<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="800.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ethan.batallanaval.Controller.ControllerBattleship">
+<AnchorPane maxHeight="850.0" maxWidth="850.0" minHeight="850.0" minWidth="850.0" prefHeight="850.0" prefWidth="850.0" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ethan.batallanaval.Controller.ControllerBattleship">
     <children>
-        <!-- Contenedor StackPane para centrar el tablero -->
-        <StackPane layoutX="20.0" layoutY="20.0" prefWidth="760.0" prefHeight="600.0">
-            <!-- Grid para el tablero de batalla -->
-            <GridPane fx:id="boardGrid" hgap="5" vgap="5">
-                <!-- Las celdas del tablero se agregarán dinámicamente aquí -->
-            </GridPane>
-        </StackPane>
+        <!-- Contenedor principal centrado -->
+        <VBox alignment="CENTER" spacing="20.0" prefWidth="850.0" prefHeight="850.0" fillWidth="true" style="-fx-background-color: #e0f7fa;">
 
-        <!-- HBox para los botones de los barcos -->
-        <HBox fx:id="shipsContainer" layoutX="20.0" layoutY="630.0" spacing="10.0" alignment="CENTER" prefWidth="760.0">
-            <!-- Los botones de los barcos se agregarán dinámicamente aquí -->
-        </HBox>
+            <!-- Título del juego -->
+            <HBox alignment="CENTER" style="-fx-background-color: #004d40; -fx-padding: 15 0;">
+                <Label text="Batalla Naval" style="-fx-font-size: 30px; -fx-text-fill: white; -fx-font-weight: bold;" />
+            </HBox>
 
-        <!-- Contenedor de botones de acción (Iniciar, Reiniciar, Instrucciones) -->
-        <HBox layoutX="20.0" layoutY="749.0" spacing="20.0" alignment="CENTER" prefWidth="760.0">
-            <!-- Botón para reiniciar el juego -->
-            <Button fx:id="resetButton" mnemonicParsing="false" onAction="#resetGame" text="Reiniciar Juego" />
+            <!-- Contenedor del tablero centrado -->
+            <StackPane alignment="CENTER" prefWidth="600.0" prefHeight="600.0" style="-fx-background-color: #c8e6c9; -fx-border-color: #004d40; -fx-border-width: 5;">
+                <GridPane fx:id="boardGrid" hgap="5" vgap="5" alignment="CENTER" style="-fx-background-color: #ffffff; -fx-border-color: #004d40; -fx-border-width: 2;">
+                    <!-- Las celdas del tablero se agregarán dinámicamente aquí -->
+                </GridPane>
+            </StackPane>
 
-            <!-- Botón para iniciar el juego -->
-            <Button fx:id="startButton" mnemonicParsing="false" onAction="#startGame" text="Iniciar Juego" />
+            <!-- Contenedor de los botones de los barcos -->
+            <HBox fx:id="shipsContainer" spacing="15.0" alignment="CENTER" prefWidth="600.0" style="-fx-background-color: #e0f2f1; -fx-padding: 20 0;">
+                <!-- Los botones de los barcos se agregarán dinámicamente aquí -->
+            </HBox>
 
-            <!-- Botón para mostrar las instrucciones -->
-            <Button fx:id="instructionsButton" mnemonicParsing="false" onAction="#showInstructions" text="Instrucciones" />
-        </HBox>
+            <!-- Contenedor de botones de acción (Iniciar, Reiniciar, Instrucciones) -->
+            <HBox spacing="25.0" alignment="CENTER" prefWidth="600.0" style="-fx-padding: 20 0;">
+                <!-- Botón para reiniciar el juego -->
+                <Button fx:id="resetButton" mnemonicParsing="false" onAction="#resetGame" text="Reiniciar Juego" style="-fx-background-color: #004d40; -fx-text-fill: white; -fx-padding: 10 20; -fx-font-size: 14px; -fx-font-weight: bold;" />
+
+                <!-- Botón para iniciar el juego -->
+                <Button fx:id="startButton" mnemonicParsing="false" onAction="#startGame" text="Iniciar Juego" style="-fx-background-color: #004d40; -fx-text-fill: white; -fx-padding: 10 20; -fx-font-size: 14px; -fx-font-weight: bold;" />
+
+                <!-- Botón para mostrar las instrucciones -->
+                <Button fx:id="instructionsButton" mnemonicParsing="false" onAction="#showInstructions" text="Instrucciones" style="-fx-background-color: #004d40; -fx-text-fill: white; -fx-padding: 10 20; -fx-font-size: 14px; -fx-font-weight: bold;" />
+            </HBox>
+        </VBox>
     </children>
 </AnchorPane>

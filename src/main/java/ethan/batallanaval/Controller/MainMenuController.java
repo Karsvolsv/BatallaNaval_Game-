@@ -24,9 +24,7 @@ public class MainMenuController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/ViewBattleship.fxml"));
             Parent root = loader.load();
 
-            // Configurar el controlador del tablero
-            ControllerBattleship controller = loader.getController();
-            controller.initialize();
+            // No es necesario llamar a controller.initialize(), se llama automáticamente
 
             // Configurar la escena y el stage
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
@@ -37,6 +35,7 @@ public class MainMenuController {
             e.printStackTrace();
         }
     }
+
 
     @FXML
     private void onSalirButtonClick() {
