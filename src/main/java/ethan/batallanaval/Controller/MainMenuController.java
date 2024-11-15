@@ -30,7 +30,7 @@ public class MainMenuController {
 
             // Configurar la escena y el stage
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-            Scene scene = new Scene(root, 750, 820);
+            Scene scene = new Scene(root, 850, 850);
             stage.setScene(scene);
             stage.show();
         } catch (Exception e) {
